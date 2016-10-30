@@ -1,0 +1,75 @@
+
+首先介绍下代理模式，再介绍Java中的动态代理实践。
+1，什么是代理模式？
+代理模式的作用是：为其他对象提供一种代理以控制对这个对象的访问。
+2，代理模式有什么好处？
+在某些情况下，一个客户不想或者不能直接引用另一个对象，而代理对象可以在客户端和目标对象之间起中介的作用。
+3，代理模式一般涉及到的角色有：
+抽象角色：声明真实对象和代理对象的共同接口,这样一来在任何可以使用目标对象的地方都可以使用代理对象。
+代理角色：代理对象内部含有目标对象的引用，从而可以在任何时候操作目标对象；代理对象提供一个与目标对象相同的接口，以便可以在任何时候替代目标对象。代理对象通常在客户端调用传递给目标对象之前或之后，执行某个操作，而不是单纯地将调用传递给目标对象，同时，代理对象可以在执行真实对象操作时，附加其他的操作，相当于对真实对象进行封装。
+真实角色：定义了代理对象所代表的目标对象，代理角色所代表的真实对象，是我们最终要引用的对象,定义了代理对象所代表的目标对象。
+
+总结：
+代理对象的方法被调用时，我们可以做一些动作，再去调用真正被代理对象的方法
+步骤
+1，实现同一个接口，创建接口、实体类、代理类（引用Ticket、创建构建方法）
+2，构造方法实例化，给代理对象传递一个真实的对象
+3，调用方法
+ 
+不足： 
+1）代理对象的一个接口只服务于一种类型的对象，如果要代理的方法很多，势必要为每一种方法都进行代理，静态代理在程序规模稍大时就无法胜任了。 
+2）如果接口增加一个方法，除了所有实现类需要实现这个方法外，所有代理类也需要实现此方法。增加了代码维护的复杂度。 
+
+动态代理（封装）
+动态代理类的源码是在程序运行期间由JVM根据反射等机制动态的生成，所以不存在代理类的字节码文件。代理类和委托类的关系是在程序运行时确定。
+
+
+1、先看看与动态代理紧密关联的Java API。 
+1）java.lang.reflect.Proxy 
+Proxy类是专门完成代理的操作类
+这是 Java 动态代理机制生成的所有动态代理类的父类，它提供了一组静态方法来为一组接口动态地生成代理类及其对象。 
+
+newProxyInstance方法用于为指定类装载器、一组接口及调用处理器生成动态代理类实例
+static Object newProxyInstance(ClassLoader loader, Class[] interfaces, InvocationHandler h) 
+2）java.lang.reflect.InvocationHandler 
+这是调用处理器接口，它自定义了一个 invoke 方法，用于集中处理在动态代理类对象上的方法调用，通常在该方法中实现对委托类的代理访问。每次生成动态代理类对象时都要指定一个对应的调用处理器对象。 
+ 该方法负责集中处理动态代理类上的所有方法调用。
+ 第一个参数既是代理类实例，
+ 第二个参数是被调用的方法对象
+ 第三个方法是调用参数。调用处理器根据这三个参数进行预处理或分派到委托类实例上反射执行
+Object invoke(Object proxy, Method method, Object[] args) 
+3）java.lang.ClassLoader 
+这是类装载器类，负责将类的字节码装载到 Java 虚拟机（JVM）中并为其定义类对象，然后该类才能被使用。Proxy 静态方法生成动态代理类同样需要通过类装载器来进行装载才能使用，它与普通类的唯一区别就是其字节码是由 JVM 在运行时动态生成的而非预存在于任何一个 .class 文件中。 
+
+2、动态代理实现步骤 
+
+一个典型的动态代理创建对象过程可分为以下四个步骤：
+1、通过实现InvocationHandler接口创建自己的调用处理器 IvocationHandler handler = new InvocationHandlerImpl(...);
+2、通过为Proxy类指定ClassLoader对象和一组代理接口类型(interface)创建动态代理类
+Class clazz = Proxy.getProxyClass(classLoader,new Class[]{...});
+3、通过反射机制获取动态代理类的构造函数，其参数类型是调用处理器接口类型
+Constructor constructor = clazz.getConstructor(new Class[]{InvocationHandler.class});
+4、通过构造函数创建代理类实例，此时需将调用处理器对象作为参数被传入
+Interface Proxy = (Interface)constructor.newInstance(new Object[] (handler));
+
+Proxy类的静态方法newProxyInstance对上面具体步骤的后三步做了封装，简化了动态代理对象的获取过程，可以通过 Proxy 直接创建动态代理类实例
+实现步骤：
+1、通过实现InvocationHandler接口创建自己的调用处理器 IvocationHandler handler = new InvocationHandlerImpl(...);
+2、调用Proxy.newProxyInstance的方法
+Proxy.newProxyInstance(Foo.class.getClassLoader(),
+                                          new Class[] { Foo.class },
+                                          handler);
+
+
+生成的ProxySubject继承Proxy类实现Subject接口，实现的Subject的方法实际调用处理器的invoke方法，而invoke方法利用反射调用的是被代理对象的的方法（Object result=method.invoke(proxied,args)）
+
+
+
+额外：
+Booststrap ClassLoader：此加载器采用C++编写，一般开发中是看不到的； 
+Extendsion ClassLoader：用来进行扩展类的加载，一般对应的是jre\lib\ext目录中的类; 
+AppClassLoader：(默认)加载classpath指定的类，是最常使用的是一种加载器。 
+
+
+
+

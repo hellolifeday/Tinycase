@@ -1,0 +1,21 @@
+1.创建对象
+2.设置监听
+3.开启连接
+4.发送数据
+function createXMLHttpRequest() {
+	var xmlHttp=null;
+	try { // Firefox, Opera 8.0+, Safari
+	xmlHttp = new XMLHttpRequest();
+	} catch (e) {
+		try {// Internet Explorer
+			xmlHttp = new ActiveXObject("Msxml2.XMLHTTP");
+		} catch (e) {
+			try {
+				xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
+			} catch (e) {
+			}
+		}
+	}
+
+	return xmlHttp;
+}
